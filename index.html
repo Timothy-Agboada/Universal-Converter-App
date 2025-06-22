@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Day 14: Universal Converter</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <!-- Font Awesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css">
+</head>
+<body class="flex items-center justify-center min-h-screen transition-colors duration-500">
+
+    <div id="root"></div>
+
+    <script type="text/babel">
+        // --- Conversion Utility Functions ---
+        const CONVERTERS = {
+            temperature: {
+                c: f => (f - 32) * 5 / 9,
+                f: c => (c * 9 / 5) + 32
+            },
+            weight: {
+                kg: lbs => lbs / 2.20462,
+                lbs: kg => kg * 2.20462
+            },
+            length: {
+                m: ft => ft / 3.28084,
+                ft: m => m * 3.28084
+            }
+        };
+
+        function tryConvert(value, convertFunc) {
+            const input = parseFloat(value);
+            if (Number.isNaN(input)) return '';
+            const output = convertFunc(input);
+            return Math.round(output * 1000) / 1000;
+        }
+        
+        // --- Reusable Input Component ---
+        const UnitInput = ({ unit, label, value, onValueChange }) => (
+            <div className="relative">
+                <label className="absolute -top-3 left-3 bg-white px-1 text-sm font-medium text-gray-500">{label}</label>
+                <input
+                    type="number"
+                    value={value}
+                    onChange={(e) => onValueChange(e.target.value)}
+                    className="w-full text-3xl p-4 pt-5 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-current"
+                />
+            </div>
+        );
+        
+        // --- Specific Converter Components ---
+        const TemperatureConverter = () => {
+            const [value, setValue] = React.useState('');
+            const [unit, setUnit] = React.useState('c');
+
+            const handleCelsiusChange = (val) => {
+                setUnit('c');
+                setValue(val);
+            };
+            const handleFahrenheitChange = (val) => {
+                setUnit('f');
+                setValue(val);
+            };
+
+            const celsius = unit === 'f' ? tryConvert(value, CONVERTERS.temperature.c) : value;
+            const fahrenheit = unit === 'c' ? tryConvert(value, CONVERTERS.temperature.f) : value;
+            
+            return (
+                <div className="space-y-6">
+                    <UnitInput unit="c" label="Celsius" value={celsius} onValueChange={handleCelsiusChange} />
+                    <UnitInput unit="f" label="Fahrenheit" value={fahrenheit} onValueChange={handleFahrenheitChange} />
+                </div>
+            );
+        };
+        
+        const WeightConverter = () => {
+            const [value, setValue] = React.useState('');
+            const [unit, setUnit] = React.useState('kg');
+
+            const handleKgChange = (val) => { setUnit('kg'); setValue(val); };
+            const handleLbsChange = (val) => { setUnit('lbs'); setValue(val); };
+
+            const kilograms = unit === 'lbs' ? tryConvert(value, CONVERTERS.weight.kg) : value;
+            const pounds = unit === 'kg' ? tryConvert(value, CONVERTERS.weight.lbs) : value;
+
+            return (
+                <div className="space-y-6">
+                    <UnitInput unit="kg" label="Kilograms" value={kilograms} onValueChange={handleKgChange} />
+                    <UnitInput unit="lbs" label="Pounds" value={pounds} onValueChange={handleLbsChange} />
+                </div>
+            );
+        };
+        
+        const LengthConverter = () => {
+            const [value, setValue] = React.useState('');
+            const [unit, setUnit] = React.useState('m');
+
+            const handleMetersChange = (val) => { setUnit('m'); setValue(val); };
+            const handleFeetChange = (val) => { setUnit('ft'); setValue(val); };
+
+            const meters = unit === 'ft' ? tryConvert(value, CONVERTERS.length.m) : value;
+            const feet = unit === 'm' ? tryConvert(value, CONVERTERS.length.ft) : value;
+
+            return (
+                <div className="space-y-6">
+                    <UnitInput unit="m" label="Meters" value={meters} onValueChange={handleMetersChange} />
+                    <UnitInput unit="ft" label="Feet" value={feet} onValueChange={handleFeetChange} />
+                </div>
+            );
+        };
+
+        // --- Main App Component ---
+        const UniversalConverterApp = () => {
+            const [activeConverter, setActiveConverter] = React.useState('temperature');
+            
+            const converterConfig = {
+                temperature: {
+                    Component: TemperatureConverter,
+                    title: 'Temperature',
+                    icon: 'fa-temperature-half',
+                    color: 'blue'
+                },
+                weight: {
+                    Component: WeightConverter,
+                    title: 'Weight',
+                    icon: 'fa-weight-hanging',
+                    color: 'green'
+                },
+                length: {
+                    Component: LengthConverter,
+                    title: 'Length',
+                    icon: 'fa-ruler',
+                    color: 'purple'
+                }
+            };
+
+            const ActiveComponent = converterConfig[activeConverter].Component;
+            const activeColor = converterConfig[activeConverter].color;
+
+            const colorClasses = {
+                blue: { bg: 'bg-blue-50', text: 'text-blue-600', border: 'border-blue-500' },
+                green: { bg: 'bg-green-50', text: 'text-green-600', border: 'border-green-500' },
+                purple: { bg: 'bg-purple-50', text: 'text-purple-600', border: 'border-purple-500' }
+            };
+            
+            // Set body background color
+            document.body.className = `flex items-center justify-center min-h-screen transition-colors duration-500 ${colorClasses[activeColor].bg}`;
+            
+            return (
+                <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-lg mx-4">
+                    <div className="flex border-b mb-6">
+                        {Object.keys(converterConfig).map(key => (
+                            <button
+                                key={key}
+                                onClick={() => setActiveConverter(key)}
+                                className={`flex-1 py-3 text-lg font-semibold transition-all duration-300 border-b-4 ${activeConverter === key ? `${colorClasses[converterConfig[key].color].text} ${colorClasses[converterConfig[key].color].border}` : 'text-gray-400 border-transparent hover:text-gray-600'}`}
+                            >
+                                <i className={`fas ${converterConfig[key].icon} mr-2`}></i>
+                                {converterConfig[key].title}
+                            </button>
+                        ))}
+                    </div>
+                    
+                    <div className="text-current">
+                        <ActiveComponent />
+                    </div>
+                </div>
+            );
+        };
+
+        // --- Rendering the App ---
+        const container = document.getElementById('root');
+        const root = ReactDOM.createRoot(container);
+        root.render(<UniversalConverterApp />);
+    </script>
+
+</body>
+</html>
